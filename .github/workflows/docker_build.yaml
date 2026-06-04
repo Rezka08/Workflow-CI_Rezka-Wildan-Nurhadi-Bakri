@@ -41,5 +41,10 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
       run: |
-        mlflow models build-docker -m "runs:/4ac9434082024b8c9f2b5a22a20bfe50/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
+        cd MLProject
+        # MLOPS OTOMATIS: Membaca Run ID yang baru saja dibuat oleh modelling.py
+        RUN_ID=$(cat run_id.txt)
+        echo "Menggunakan Run ID Otomatis: $RUN_ID"
+        
+        mlflow models build-docker -m "runs:/$RUN_ID/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest

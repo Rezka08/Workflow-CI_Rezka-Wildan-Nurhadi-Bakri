@@ -15,8 +15,6 @@ os.environ["MLFLOW_TRACKING_PASSWORD"] = DAGSHUB_TOKEN
 mlflow.set_tracking_uri(f"https://dagshub.com/{DAGSHUB_USERNAME}/{DAGSHUB_REPO}.mlflow")
 
 def train_simple_model():
-    # Load dataset hasil preprocessing Tahap 1
-    # Pastikan path ini sesuai dengan letak dataset di dalam folder MLProject nanti
     df = pd.read_csv("titanic_preprocessing/dataset_ready.csv")
     
     X = df.drop('Survived', axis=1)
@@ -25,7 +23,7 @@ def train_simple_model():
 
     mlflow.set_experiment("Titanic_CI_Workflow")
     
-    with mlflow.start_run(run_name="CI_Automated_Run"):
+    with mlflow.start_run(run_name="CI_Automated_Run") as run:
         rf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
         rf.fit(X_train, y_train)
         
@@ -35,7 +33,10 @@ def train_simple_model():
         mlflow.log_metric("accuracy", acc)
         mlflow.sklearn.log_model(rf, "model")
         
-        print(f"Model berhasil dilatih via CI Workflow! Akurasi: {acc:.2f}")
+        with open("run_id.txt", "w") as f:
+            f.write(run.info.run_id)
+            
+        print(f"Model berhasil dilatih! Run ID Otomatis: {run.info.run_id}")
 
 if __name__ == "__main__":
     train_simple_model()
