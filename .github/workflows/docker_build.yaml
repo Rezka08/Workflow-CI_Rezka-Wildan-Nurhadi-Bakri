@@ -1,51 +1,39 @@
-name: MLflow CI & Docker Build
+- name: Set up Python 3.12.7
+  uses: actions/setup-python@v4
+  with:
+    python-version: '3.12.7'
 
-on:
-  push:
-    branches: [ "main" ]
+- name: Install Dependencies
+  run: |
+    pip install mlflow==2.19.0 pandas scikit-learn
 
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+- name: Run MLProject (Training Model)
+  env:
+    MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+    MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+    MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
+  run: |
+    cd MLProject
+    mlflow run . --env-manager=local
 
-    - name: Set up Python 3.12.7
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.12.7'
+- name: Login to Docker Hub
+  uses: docker/login-action@v2
+  with:
+    username: ${{ secrets.DOCKERHUB_USERNAME }}
+    password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Install Dependencies
-      run: |
-        pip install mlflow==2.19.0 pandas scikit-learn
-
-    - name: Run MLProject (Training Model)
-      env:
-        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-        MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
-      run: |
-        cd MLProject
-        mlflow run . --env-manager=local
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build and Push Docker Image
-      env:
-        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
-        MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
-      run: |
-        cd MLProject
-        RUN_ID=$(cat run_id.txt)
-        echo "Menggunakan Run ID Otomatis: $RUN_ID"
-        
-        # BYPASS ERROR: Menambahkan --env-manager=conda agar tidak memakai script Python 3.9 yang rusak
-        mlflow models build-docker -m "runs:/$RUN_ID/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest --env-manager=conda
-        
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
+- name: Build and Push Docker Image
+  env:
+    MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+    MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+    MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
+  run: |
+    cd MLProject
+    RUN_ID=$(cat run_id.txt)
+    echo "Menggunakan Run ID Otomatis: $RUN_ID"
+    
+    # BYPASS ERROR FINAL: Menggunakan env-manager=local saat build docker
+    # Ini akan memaksa sistem tidak membuat conda/virtualenv baru di dalam docker
+    mlflow models build-docker -m "runs:/$RUN_ID/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest --env-manager=local
+    
+    docker push ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
