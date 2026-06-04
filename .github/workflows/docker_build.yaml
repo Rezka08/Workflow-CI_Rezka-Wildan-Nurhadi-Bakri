@@ -41,5 +41,5 @@ jobs:
         MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         MLFLOW_TRACKING_URI: ${{ secrets.DAGSHUB_URI }}
       run: |
-        mlflow models build-docker -m "runs:/d8a5eb07620097b107243d1fad5c25460a52b523/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
+        mlflow models build-docker -m "runs:/f1401e6a0d1443339099e12de86c3774/model" -n ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/titanic-model:latest
