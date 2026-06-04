@@ -31,12 +31,27 @@ def train_simple_model():
         acc = accuracy_score(y_test, y_pred)
         
         mlflow.log_metric("accuracy", acc)
-        mlflow.sklearn.log_model(rf, "model")
         
+        # --- SOLUSI BYPASS ANACONDA ToS ---
+        # Kita paksa model untuk murni menggunakan channel "conda-forge" (komunitas gratis)
+        custom_env = {
+            "name": "mlflow-env",
+            "channels": ["conda-forge"],
+            "dependencies": [
+                "python=3.12.7",
+                "pip",
+                {"pip": ["mlflow==2.19.0", "scikit-learn", "pandas"]}
+            ]
+        }
+        
+        # Simpan model dengan environment buatan kita
+        mlflow.sklearn.log_model(rf, "model", conda_env=custom_env)
+        
+        # Simpan Run ID Otomatis
         with open("run_id.txt", "w") as f:
             f.write(run.info.run_id)
             
-        print(f"Model berhasil dilatih! Run ID Otomatis: {run.info.run_id}")
+        print(f"Model dilatih! Run ID: {run.info.run_id}")
 
 if __name__ == "__main__":
     train_simple_model()
